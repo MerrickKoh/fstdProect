@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <div class="main">
+        <div class="top-row px-4 auth">
+
+            <a href="/UserOrders" class="btn btn-link" style="font-family:Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif">
+                <span class="oi oi-eye"></span>
+                View Your Order
+            </a>&nbsp;&nbsp;&nbsp;&nbsp;
+
+            <LoginDisplay />
+
+
+
+        </div>
+
+        <div class="content px-4">
+            @Body
+        </div>
+        <br />
+        <hr color="red" />
+        <div class="bottom">
+            <div>
+               <Bottom />
+            </div>
+            <div tandc>
+                <NavLink href="tac" target="_blank" style="">
+                    Terms and Condition
+                </NavLink>
+                <NavLink href="privacy" target="_blank" style="">
+                    Privacy
+                </NavLink>
+            </div>
+        </div>
+    </div>
+    
+    
+</div>

@@ -1,0 +1,87 @@
+﻿@inject HttpClient _client
+<EditForm Model="@customer" OnValidSubmit="@OnValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Name: </label>
+            <InputText @bind-Value="@customer.Name" class="form-control" />
+            <ValidationMessage For="@(()=>customer.Name)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Contact: </label>
+            <InputText @bind-Value="@customer.Contact" class="form-control" />
+            <ValidationMessage For="@(()=>customer.Contact)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Address: </label>
+            <InputText @bind-Value="@customer.Address" class="form-control" />
+            <ValidationMessage For="@(()=>customer.Address)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Email: </label>
+            <InputText @bind-Value="@customer.Email" class="form-control" />
+            <ValidationMessage For="@(()=>customer.Email)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Payment: </label>
+            <div>
+                <InputSelect @bind-Value="customer.PaymentId" class="form-control">
+                    <option value="">-- Select Card --</option>
+                    @if (Payments != null)
+                    {
+                        foreach (var payment in Payments)
+                        {
+                            <option value="@payment.Id">@payment.CardNo</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => customer.PaymentId)" />
+            </div>
+
+        </div>
+    </fieldset>
+
+        @if (!Disabled)
+        {
+            <button type="submit" class="btn btn-success btn-block">
+                @ButtonText
+
+            </button>
+        }
+        <FoodDeliveryPRojectFull.Client.Components.BackToList Target="Customers" />
+
+</EditForm>
+
+@code {
+    [Parameter] public bool Disabled { get; set; } = false;
+    [Parameter] public Customer customer { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Save";
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+
+    private IList<Payment> Payments;
+    protected async override Task OnInitializedAsync()
+    {
+
+        Payments = await _client.GetFromJsonAsync<List<Payment>>($"{EndPoint.PaymentsEndPoint}");
+
+    }
+
+}

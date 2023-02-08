@@ -1,0 +1,35 @@
+﻿@page "/Catergories/create"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>Create Catergory</h3>
+<br />
+<hr />
+
+<EditForm Model="@cat" OnValidSubmit="CreateCatergory">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    
+
+    <div class="form-group">
+        <label>Name: </label>
+        <InputText @bind-Value="@cat.Name" class="form-control" />
+        <ValidationMessage For="@(()=>cat.Name)" />
+
+    </div>
+    <button type="submit" class="btn btn-success btn-block">
+        Create Catergory
+
+    </button>
+</EditForm>
+
+@code {
+    Catergory cat = new Catergory();
+
+
+    private async Task CreateCatergory()
+    {
+        await _client.PostAsJsonAsync(EndPoint.CatergoriesEndPoint, cat);
+        _navManager.NavigateTo("/Catergories/");
+    }
+}
+

@@ -1,0 +1,84 @@
+﻿@inject HttpClient _client
+<EditForm Model="@orders" OnValidSubmit="@OnValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+
+
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Customer: </label>
+            <div>
+                <InputSelect @bind-Value="orders.CustomerId" class="form-control">
+                    <option value="">-- Select Customer --</option>
+                    @if (Customers != null)
+                    {
+                        foreach (var customer in Customers)
+                        {
+                            <option value="@customer.Id">@customer.Name</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => orders.Customer)" />
+            </div>
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Food: </label>
+            <div>
+                <InputSelect @bind-Value="orders.FoodId" class="form-control">
+                    <option value="">-- Select Food --</option>
+                    @if (Foods != null)
+                    {
+                        foreach (var food in Foods)
+                        {
+                            <option value="@food.Id">@food.Name</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() =>orders.FoodId)" />
+
+            </div>
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Delivery Date: </label>
+            <div>
+                <InputDate @bind-Value="orders.OrderTime" class="form-control" />
+
+
+                <ValidationMessage For="@(() =>orders.OrderTime)" />
+
+            </div>
+
+        </div>
+    </fieldset>
+        @if (!Disabled)
+        {
+            <button type="submit" class="btn btn-success btn-block">
+                @ButtonText
+
+            </button>
+        }
+        <FoodDeliveryPRojectFull.Client.Components.BackToList Target="Orders" />
+</EditForm>
+@code {
+    [Parameter] public bool Disabled { get; set; } = false;
+    [Parameter] public Orders orders { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Save";
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    private IList<Customer> Customers;
+    private IList<Food> Foods;
+    protected async override Task OnInitializedAsync()
+    {
+
+        Foods = await _client.GetFromJsonAsync<List<Food>>($"{EndPoint.FoodsEndPoint}");
+        Customers = await _client.GetFromJsonAsync<List<Customer>>($"{EndPoint.CustomersEndPoint}");
+
+    }
+
+}

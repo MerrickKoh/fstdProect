@@ -1,0 +1,92 @@
+﻿@inject HttpClient _client
+<EditForm Model="@food" OnValidSubmit="@OnValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Name: </label>
+            <InputText @bind-Value="@food.Name" class="form-control" />
+            <ValidationMessage For="@(()=>food.Name)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Picture link: </label>
+            <InputText @bind-Value="@food.ImgUrl" class="form-control" />
+            <ValidationMessage For="@(()=>food.ImgUrl)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Price: </label>
+            <InputNumber @bind-Value="@food.Price" class="form-control" />
+            <ValidationMessage For="@(()=>food.Price)" />
+
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Catergory: </label>
+            <div>
+                <InputSelect @bind-Value="food.CatergoryId" class="form-control">
+                    <option value="">-- Select Catergory --</option>
+                    @if (Catergories != null)
+                    {
+                        foreach (var catergory in Catergories)
+                        {
+                            <option value="@catergory.Id">@catergory.Name</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => food.CatergoryId)" />
+            </div>
+
+        </div>
+    </fieldset>
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Event: </label>
+            <div>
+                <InputSelect @bind-Value="food.EventsId" class="form-control">
+                    <option value="">-- Select Event --</option>
+                    @if (Eventss != null)
+                    {
+                        foreach (var events in Eventss)
+                        {
+                            <option value="@events.Id">@events.Name</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => food.CatergoryId)" />
+            </div>
+        </div>
+    </fieldset>
+        @if (!Disabled)
+        {
+            <button type="submit" class="btn btn-success btn-block">
+                @ButtonText
+
+            </button>
+        }
+        <FoodDeliveryPRojectFull.Client.Components.BackToList Target="Foods" />
+</EditForm>
+
+@code {
+    [Parameter] public Food food { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Save";
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool Disabled { get; set; } = false;
+    private IList<Events> Eventss;
+    private IList<Catergory> Catergories;
+    protected async override Task OnInitializedAsync()
+    {
+        Eventss = await _client.GetFromJsonAsync<List<Events>>($"{EndPoint.EventsEndPoint}");
+        Catergories = await _client.GetFromJsonAsync<List<Catergory>>($"{EndPoint.CatergoriesEndPoint}");
+
+    }
+}

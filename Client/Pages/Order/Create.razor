@@ -1,0 +1,91 @@
+﻿@page "/Orders/create"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>Create Orders</h3>
+<hr />
+<br />
+
+<EditForm Model="@orders" OnValidSubmit="CreateOrders">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+
+
+
+    <div class="form-group">
+        <label>Customer: </label>
+        <div>
+            <InputSelect @bind-Value="orders.CustomerId" class="form-control">
+                <option value="">-- Select Customer --</option>
+                @if (Customers != null)
+                {
+                    foreach (var customer in Customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => orders.Customer)" />
+        </div>
+
+    </div>
+    <div class="form-group">
+        <label>Food: </label>
+        <div>
+            <InputSelect @bind-Value="orders.FoodId" class="form-control">
+                <option value="">-- Select Food --</option>
+                @if (Foods != null)
+                {
+                    foreach (var food in Foods)
+                    {
+                        <option value="@food.Id">@food.Name</option>
+                    }
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() =>orders.FoodId)" />
+
+        </div>
+
+    </div>
+    <div class="form-group">
+        <label>Delivery Date: </label>
+        <div>
+            <InputDate @bind-Value="orders.OrderTime" class="form-control"/>
+               
+      
+            <ValidationMessage For="@(() =>orders.OrderTime)" />
+
+        </div>
+
+    </div>
+
+    <button type="submit" class="btn btn-success btn-block">
+        Create Order
+
+    </button>
+
+</EditForm>
+
+
+@code {
+    Orders orders = new Orders();
+
+    private IList<Customer> Customers;
+    private IList<Food> Foods;
+    protected async override Task OnInitializedAsync()
+    {
+
+        Foods = await _client.GetFromJsonAsync<List<Food>>($"{EndPoint.FoodsEndPoint}");
+        Customers =await _client.GetFromJsonAsync<List<Customer>>($"{EndPoint.CustomersEndPoint}");
+
+    }
+    private async Task CreateOrders()
+    {
+        await _client.PostAsJsonAsync(EndPoint.OrdersEndPoint, orders);
+
+        _navManager.NavigateTo("/Orders");
+
+    }
+
+
+}

@@ -1,0 +1,14 @@
+﻿@page "/Events/view/{id:int}"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>View Event</h3>
+<FormComponent events="events" Disabled="true" />
+@code {
+    [Parameter] public int id { get; set; }
+    Events events = new Events();
+    protected async override Task OnParametersSetAsync()
+    {
+        events = await
+        _client.GetFromJsonAsync<Events>($"{EndPoint.EventsEndPoint}/{id}");
+    }
+}

@@ -1,0 +1,105 @@
+﻿@page "/accounts/"
+@inject HttpClient _client
+@attribute [Authorize]
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime js
+@implements IDisposable
+
+
+
+@if (AppUsers == null)
+{
+    <div class="alert alert‐info">Loading Accounts...</div>
+}
+else
+{
+    if (@_currentUserRole == "Administrator")
+    {
+        <h3>App Users</h3>
+
+        <table class="table table‐responsive" id="acTable">
+            <thead>
+                <tr>
+                    <th>Account Id</th>
+                    <th>Email</th>
+                    <th>User Name</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var appUser in AppUsers)
+                {
+                    <tr>
+                        <td>@appUser.Id</td>
+                        <td>@appUser.Email</td>
+                        <td>@appUser.UserName</td>
+                        <td>@appUser.FirstName</td>
+                        <td>@appUser.LastName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    if (@_currentUserRole != "Administrator")
+    {
+
+        <h1 class="text-danger">
+
+            You are not authorized to access this resource.
+        </h1>
+
+    }
+}
+@code {
+    private List<AppUser> AppUsers;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+    protected async override Task OnInitializedAsync()
+    {
+        AppUsers = await
+        _client.GetFromJsonAsync<List<AppUser>>($"{EndPoint.AccountsEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("AddDataTable", "#acTable");
+    }
+    public void Dispose()
+    {
+        js.InvokeVoidAsync("DataTablesDispose", "#acTable");
+
+    }
+}
+

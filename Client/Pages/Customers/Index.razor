@@ -1,0 +1,142 @@
+﻿@page "/customers/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+@inject HttpInterceptorService _interceptor
+@implements IDisposable
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (Customers == null)
+{
+    <div class="alert alert-info">Loading Customers...</div>
+}
+
+else
+{
+    if (_currentUserRole == "Administrator")
+    {
+        <h3>Customers</h3>
+        <a href="/customers/create" class="btn btn-secondary">
+            <span class="oi oi-plus"></span>
+            Create New Customer
+        </a>
+        <br />
+        <br />
+        <table class="table table-responsive" id="custTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th>Contact</th>
+                    <th>Card Number</th>
+                    <th>Card SVC</th>
+                    <th>Card Expiry Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Customers)
+                {
+                    <tr>
+                        <td>@customer.Name</td>
+                        <td>@customer.Email</td>
+                        <td>@customer.Address</td>
+                        <td>@customer.Contact</td>
+                        <td>@customer.Payment.CardNo</td>
+                        <td>@customer.Payment.Svc</td>
+                        <td>@customer.Payment.Expire.ToString("d MM yyyy")</td>
+                        <td>
+                            <a href="/Customers/view/@customer.Id" class="btn btn-primary">
+                                <span class="oi oi-book"></span>
+                            </a>
+                            <a href="/Customers/edit/@customer.Id" class="btn btn-warning">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(customer.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    }
+    if (@_currentUserRole != "Administrator")
+    {
+
+        <h1 class="text-danger">
+
+            You are not authorized to access this resource.
+        </h1>
+
+    }
+}
+
+
+
+
+@code {
+    private List<Customer> Customers;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _interceptor.MonitorEvent();
+        Customers = await _client.GetFromJsonAsync<List<Customer>>($"{EndPoint.CustomersEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+
+    async Task Delete(int CustomerId)
+    {
+        var customer = Customers.First(q => q.Id == CustomerId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {customer.Email}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{EndPoint.CustomersEndPoint}/{CustomerId}");
+            await OnInitializedAsync();
+        }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("AddDataTable", "#custTable");
+    }
+    public void Dispose()
+    {
+        js.InvokeVoidAsync("DataTablesDispose", "#custTable");
+        _interceptor.DisposeEvent();
+    }
+}

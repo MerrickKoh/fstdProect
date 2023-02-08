@@ -1,0 +1,87 @@
+﻿@page "/customers/create"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>Create Customers</h3>
+<hr />
+<br />
+<EditForm Model="@customer" OnValidSubmit="CreateCustomers">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+
+    <div class="form-group">
+        <label>Name: </label>
+        <InputText @bind-Value="@customer.Name" class="form-control" />
+        <ValidationMessage For="@(()=>customer.Name)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Contact: </label>
+        <InputText @bind-Value="@customer.Contact" class="form-control" />
+        <ValidationMessage For="@(()=>customer.Contact)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Address: </label>
+        <InputText @bind-Value="@customer.Address" class="form-control" />
+        <ValidationMessage For="@(()=>customer.Address)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Email: </label>
+        <InputText @bind-Value="@customer.Email" class="form-control" />
+        <ValidationMessage For="@(()=>customer.Email)" />
+
+
+    </div>
+
+    <div class="form-group">
+        <label>Payment: </label>
+        <div>
+            <InputSelect @bind-Value="customer.PaymentId" class="form-control">
+                <option value="">-- Select Card --</option>
+                @if (Payments != null)
+                {
+                    foreach (var payment in Payments)
+                    {
+                        <option value="@payment.Id">@payment.CardNo</option>
+                    }
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => customer.PaymentId)" />
+        </div>
+
+    </div>
+
+    <button type="submit" class="btn btn-success btn-block">
+        Create Customer
+
+    </button>
+
+</EditForm>
+
+
+@code {
+    Customer customer = new Customer();
+
+    private IList<Payment> Payments;
+    
+    protected async override Task OnInitializedAsync()
+    {
+
+        Payments = await _client.GetFromJsonAsync<List<Payment>>($"{EndPoint.PaymentsEndPoint}");
+
+    }
+    private async Task CreateCustomers()
+    {
+        await _client.PostAsJsonAsync(EndPoint.CustomersEndPoint, customer);
+
+        _navManager.NavigateTo("/customers");
+
+    }
+
+
+}

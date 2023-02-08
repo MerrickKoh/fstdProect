@@ -1,0 +1,50 @@
+﻿@page "/Payment/create"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>Create Payment</h3>
+<hr />
+<br />
+
+<EditForm Model="@pay" OnValidSubmit="CreateCatergory">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Card No:</label>
+        <InputText @bind-Value="@pay.CardNo" class="form-control"/>
+        
+        <ValidationMessage For="@(()=>pay.CardNo)" />
+
+    </div>
+    <div class="form-group">
+        <label>SVC:</label>
+        <InputText @bind-Value="@pay.Svc" class="form-control" />
+        <ValidationMessage For="@(()=>pay.Svc)" />
+
+    </div>
+    <div class="form-group">
+        <label>Expire Date:</label>
+        <InputDate @bind-Value="@pay.Expire" class="form-control">
+            @DateTime.Now
+        </InputDate>
+        <ValidationMessage For="@(()=>pay.CardNo)" />
+
+    </div>
+    <button type="submit" class="btn btn-success btn-block">
+        Add Card
+
+    </button>
+</EditForm>
+
+
+@code {
+    Payment pay = new Payment();
+
+
+    private async Task CreateCatergory()
+    {
+        await _client.PostAsJsonAsync(EndPoint.PaymentsEndPoint, pay);
+        _navManager.NavigateTo("/customers/create");
+    }
+}
+

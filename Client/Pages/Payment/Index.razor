@@ -1,0 +1,127 @@
+﻿@page "/Payment/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+@inject HttpInterceptorService _interceptor
+@implements IDisposable
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (Payments == null)
+{
+    <div class="alert alert-info">Loading Orders...</div>
+}
+
+else
+{
+    if (_currentUserRole == "Administrator")
+    {
+        <h3>Cards</h3>
+
+        <br />
+        <table class="table table-responsive" id="payTable">
+            <thead>
+                <tr>
+                    <th>Card Id</th>
+                    <th>Card no</th>
+                    <th>Svc</th>
+                    <th>Expiry Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @foreach (var Payment in Payments)
+                {
+                    <tr>
+                        <td>@Payment.Id.ToString()</td>
+                        <td>@Payment.CardNo</td>
+                        <td>@Payment.Svc</td>
+                        <td>@Payment.Expire.Date.ToString("dd MMMM yyyy")</td>
+
+
+                        <td>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(Payment.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    }
+    if (@_currentUserRole != "Administrator")
+    {
+
+        <h1 class="text-danger">
+
+            You are not authorized to access this resource.
+        </h1>
+
+    }
+}
+
+
+@code {
+    private List<Payment> Payments;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _interceptor.MonitorEvent();
+        Payments = await _client.GetFromJsonAsync<List<Payment>>($"{EndPoint.PaymentsEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+
+    async Task Delete(int PaymentId)
+    {
+        var Payment = Payments.First(q => q.Id == PaymentId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {Payment.Id}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{EndPoint.PaymentsEndPoint}/{PaymentId}");
+            await OnInitializedAsync();
+        }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("AddDataTable", "#payTable");
+    }
+    public void Dispose()
+    {
+        js.InvokeVoidAsync("DataTablesDispose", "#payTable");
+        _interceptor.DisposeEvent();
+    }
+}

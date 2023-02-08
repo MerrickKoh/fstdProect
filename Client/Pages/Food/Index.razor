@@ -1,0 +1,144 @@
+﻿@page "/Foods/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+@inject HttpInterceptorService _interceptor
+@implements IDisposable
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (Foods == null)
+{
+    <div class="alert alert-info">Loading Foods...</div>
+}
+
+else
+{
+    if (_currentUserRole == "Administrator")
+    {
+        <h3>Foods</h3>
+        <a href="/Foods/create" class="btn btn-secondary">
+            <span class="oi oi-plus"></span>
+            Create New Food
+        </a>
+        <br />
+        <br />
+        <table class="table table-responsive" id="foodTable">
+            <thead>
+                <tr>
+                    <th>Picture</th>
+                    <th>Name</th>
+                    <th>Catergory</th>
+                    <th>Event</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var Food in Foods)
+                {
+                    <tr>
+                        <td>
+                            <img src="@Food.ImgUrl" width="100" height="100" alt="Food Image">
+                        </td>
+                        <td>@Food.Name</td>
+                        <td>@Food.Catergory.Name</td>
+                        <td>@Food.Events.Name</td>
+
+                        <td>
+                            <a href="/Foods/view/@Food.Id" class="btn btn-primary">
+                                <span class="oi oi-book"></span>
+                            </a>
+                            <a href="/Foods/edit/@Food.Id" class="btn btn-warning">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(Food.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    }
+    if (@_currentUserRole != "Administrator")
+    {
+
+        <h1 class="text-danger">
+
+            You are not authorized to access this resource.
+        </h1>
+
+    }
+}
+
+
+
+
+@code {
+    private List<Food> Foods;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _interceptor.MonitorEvent();
+        Foods = await _client.GetFromJsonAsync<List<Food>>($"{EndPoint.FoodsEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+
+
+
+    async Task Delete(int FoodId)
+    {
+        var Food = Foods.First(q => q.Id == FoodId);
+        var confirm = await js.InvokeAsync<bool>
+    ("confirm", $"Do you want to delete {Food.Name}?");
+    if (confirm)
+    {
+    await _client.DeleteAsync($"{EndPoint.FoodsEndPoint}/{FoodId}");
+    await OnInitializedAsync();
+    }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+    await js.InvokeVoidAsync("AddDataTable", "#foodTable");
+    }
+    public void Dispose()
+    {
+    js.InvokeVoidAsync("DataTablesDispose", "#foodTable");
+    _interceptor.DisposeEvent();
+    }
+
+
+    }

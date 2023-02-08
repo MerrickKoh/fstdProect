@@ -1,0 +1,21 @@
+﻿@page  "/Catergories/edit/{id:int}"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+<h3>Edit Catergory</h3>
+
+<FormComponent ButtonText="Update" OnValidSubmit="EditCatergory" cat="cat" />
+
+
+@code {
+    [Parameter] public int id { get; set; }
+    Catergory cat = new Catergory();
+    protected async override Task OnParametersSetAsync()
+    {
+        cat = await _client.GetFromJsonAsync<Catergory>($"{EndPoint.CatergoriesEndPoint}/{id}");
+    }
+    async Task EditCatergory()
+    {
+        await _client.PutAsJsonAsync($"{EndPoint.CatergoriesEndPoint}/{id}", cat);
+        _navManager.NavigateTo("/Catergories/");
+    }
+}

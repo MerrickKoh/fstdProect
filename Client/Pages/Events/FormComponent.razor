@@ -1,0 +1,28 @@
+﻿<EditForm Model="@events" OnValidSubmit="@OnValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <fieldset disabled="@Disabled">
+        <div class="form-group">
+            <label>Name</label>
+            <InputText @bind-Value="@events.Name" class="form-control" />
+            <ValidationMessage For="@(()=>events.Name)" />
+
+        </div>
+    </fieldset>
+    @if (!Disabled)
+    {
+        <button type="submit" class="btn btn-success btn-block">
+            @ButtonText
+
+        </button>
+    }
+    <FoodDeliveryPRojectFull.Client.Components.BackToList Target="Events" />
+</EditForm>
+@code {
+    [Parameter] public bool Disabled { get; set; } = false;
+    [Parameter] public Events events { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Save";
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+
+
+}

@@ -1,0 +1,143 @@
+﻿@page "/UserOrders/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+@inject HttpInterceptorService _interceptor
+@implements IDisposable
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (Orders == null)
+{
+    <div class="alert alert-info">Loading Orders...</div>
+}
+
+else
+{
+
+        <h3>Orders</h3>
+
+
+        <br />
+        <br />
+        <table class="table table-responsive" id="orderTable">
+            <thead>
+                <tr>
+                    <th>Order Id</th>
+                    <th>Food</th>
+                    <th>Customer Name</th>
+                    <th>Address</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Price</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var Order in Orders)
+                {
+                    if (Order.CreatedBy == @_currentUserName)
+                    {
+                        
+                            
+                    <tr>
+                        <td>@Order.Id.ToString()</td>
+                        <td>@Order.Food.Name</td>
+                        <td>@Order.Customer.Name</td>
+                        <td>@Order.Customer.Address</td>
+                        <td>@Order.Customer.Contact</td>
+                        <td>@Order.Customer.Email</td>
+                        <td>@Order.Food.Price </td>
+                        <td>@Order.OrderTime.Date.ToString("dd MMMM yyyy")</td>
+
+
+                        <td>
+                          
+                            <button class="btn btn-danger" @onclick="@(() => Delete(Order.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </td>
+                    </tr>
+                        
+                       
+                    }
+
+                }
+
+            </tbody>
+        </table>
+    
+    
+}
+
+
+
+
+@code {
+    private List<Orders> Orders;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _interceptor.MonitorEvent();
+        Orders = await _client.GetFromJsonAsync<List<Orders>>($"{EndPoint.OrdersEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+
+
+    async Task Delete(int OrderId)
+    {
+
+        var Order = Orders.First(q => q.Id == OrderId);
+        var confirm = await js.InvokeAsync<bool>
+    ("confirm", $"Do you want to delete {Order.Id}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{EndPoint.OrdersEndPoint}/{OrderId}");
+            await OnInitializedAsync();
+        }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("AddDataTable", "#orderTable");
+    }
+    public void Dispose()
+    {
+        js.InvokeVoidAsync("DataTablesDispose", "#orderTable");
+        _interceptor.DisposeEvent();
+    }
+
+
+}

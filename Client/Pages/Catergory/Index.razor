@@ -1,0 +1,132 @@
+﻿@page "/catergories/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject HttpInterceptorService _interceptor
+@implements IDisposable
+
+
+@if (Catergories == null)
+{
+    <div class="alert alert-info">Loading Catergories...</div>
+}
+
+else
+{
+    if (_currentUserRole == "Administrator")
+    {
+        <h3>Catergories</h3>
+        <a href="/Catergories/create" class="btn btn-secondary">
+            <span class="oi oi-plus"></span>
+            Create New Catergory
+        </a>
+        <br />
+        <br />
+        <table class="table table-responsive" id="catTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var catergory in Catergories)
+                {
+                    <tr>
+                        <td>@catergory.Name</td>
+                        <td>
+                            <a href="/catergories/view/@catergory.Id" class="btn btn-primary">
+                                <span class="oi oi-book"></span>
+                            </a>
+                            <a href="/catergories/edit/@catergory.Id" class="btn btn-warning">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(catergory.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    }
+    if (@_currentUserRole != "Administrator")
+    {
+
+        <h1 class="text-danger">
+
+            You are not authorized to access this resource.
+        </h1>
+
+    }
+}
+
+
+
+
+@code {
+    private List<Catergory> Catergories;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+    private string _currentUserId;
+    private string _currentUserName;
+    private string _currentUserRole;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _interceptor.MonitorEvent();
+        Catergories = await _client.GetFromJsonAsync<List<Catergory>>($"{EndPoint.CatergoriesEndPoint}");
+        var authState = await
+        AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            _claims = user.Claims;
+            //_currentUserName = user.Identity.Name;
+            if (_claims.Count() > 0)
+            {
+                foreach (var claim in _claims)
+                {
+                    if (claim.Type == "sub")
+                    {
+                        _currentUserId = claim.Value;
+                        continue;
+                    }
+                    if (claim.Type == "name")
+                    {
+                        _currentUserName = claim.Value;
+                        continue;
+                    }
+                }
+            }
+        }
+        if (_currentUserId != String.Empty)
+        {
+            _currentUserRole = await
+            _client.GetStringAsync($"{EndPoint.AccountsEndPoint}/{_currentUserId}");
+        }
+    }
+
+    async Task Delete(int CatergoryId)
+    {
+        var catergory = Catergories.First(q => q.Id == CatergoryId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {catergory.Name}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{EndPoint.CatergoriesEndPoint}/{CatergoryId}");
+            await OnInitializedAsync();
+        }
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await js.InvokeVoidAsync("AddDataTable", "#catTable");
+    }
+    public void Dispose()
+    {
+        js.InvokeVoidAsync("DataTablesDispose", "#catTable");
+        _interceptor.DisposeEvent();
+    }
+
+}

@@ -1,0 +1,102 @@
+﻿@page "/Foods/create"
+@inject HttpClient _client
+@inject NavigationManager _navManager
+
+
+<h3>Create Food</h3>
+<hr />
+<br />
+
+<EditForm Model="@food" OnValidSubmit="CreateFood">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group">
+        <label>Name: </label>
+        <InputText @bind-Value="@food.Name" class="form-control" />
+        <ValidationMessage For="@(()=>food.Name)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Picture link: </label>
+        <InputText @bind-Value="@food.ImgUrl" class="form-control" />
+        <ValidationMessage For="@(()=>food.ImgUrl)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Price: </label>
+        <InputNumber @bind-Value="@food.Price" class="form-control" />
+        <ValidationMessage For="@(()=>food.Price)" />
+
+
+    </div>
+    <div class="form-group">
+        <label>Catergory: </label>
+        <div>
+            <InputSelect @bind-Value="food.CatergoryId" class="form-control">
+                <option value="">-- Select Catergory --</option>
+                @if (Catergories != null)
+                {
+                    foreach (var catergory in Catergories)
+                    {
+                        <option value="@catergory.Id">@catergory.Name</option>
+                    }
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => food.CatergoryId)" />
+        </div>
+
+    </div>
+    <div class="form-group">
+        <label>Event: </label>
+        <div>
+            <InputSelect @bind-Value="food.EventsId" class="form-control">
+                <option value="">-- Select Event --</option>
+                @if (Eventss != null)
+                {
+                    foreach (var events in Eventss)
+                    {
+                        <option value="@events.Id">@events.Name</option>
+                    }
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => food.CatergoryId)" />
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success btn-block">
+        Create Food
+
+    </button>
+
+</EditForm>
+  
+
+
+
+ 
+  
+
+
+  
+
+
+@code {
+    Food food = new Food();
+    private IList<Events> Eventss;
+    private IList<Catergory> Catergories;
+    protected async override Task OnInitializedAsync()
+    {
+        Eventss = await _client.GetFromJsonAsync<List<Events>>($"{EndPoint.EventsEndPoint}");
+        Catergories = await _client.GetFromJsonAsync<List<Catergory>>($"{EndPoint.CatergoriesEndPoint}");
+
+    }
+    private async Task CreateFood()
+    {
+        await _client.PostAsJsonAsync(EndPoint.FoodsEndPoint, food);
+        _navManager.NavigateTo("/Foods/");
+
+    }
+
+
+}

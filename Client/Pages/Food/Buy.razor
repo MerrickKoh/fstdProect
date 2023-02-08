@@ -1,0 +1,24 @@
+﻿
+@inject HttpClient _client
+@inject NavigationManager _navManager
+
+<h3>Edit Food</h3>
+
+
+
+
+@code {
+    
+     
+    Orders orders = new Orders();
+    [Parameter] public int id { get; set; }
+    Food food = new Food();
+    
+    private async Task CreateOrders()
+    {
+        await _client.PostAsJsonAsync(EndPoint.OrdersEndPoint, orders);
+
+        _navManager.NavigateTo("/Orders");
+
+    }
+}
