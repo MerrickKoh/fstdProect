@@ -1,5 +1,6 @@
 ﻿@page "/Payment/create"
 @inject HttpClient _client
+@attribute [Authorize]
 @inject NavigationManager _navManager
 <h3>Create Payment</h3>
 <hr />
@@ -11,8 +12,8 @@
 
     <div class="form-group">
         <label>Card No:</label>
-        <InputText @bind-Value="@pay.CardNo" class="form-control"/>
-        
+        <InputText @bind-Value="@pay.CardNo" class="form-control" />
+
         <ValidationMessage For="@(()=>pay.CardNo)" />
 
     </div>
